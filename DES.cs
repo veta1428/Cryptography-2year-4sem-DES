@@ -307,10 +307,10 @@ namespace DES
         }
 
 
-        public byte[] Encrypt(string openText, string key, CryptoMode cryptoMode, AddMode addMode)
+        public byte[] Encrypt(string openText, string key, CryptoMode cryptoMode, AddMode addMode = AddMode.ANSI)
             => Encrypt(Encoding.UTF8.GetBytes(openText), key, cryptoMode, addMode);
 
-        public byte[] Encrypt(byte[] openText, string key, CryptoMode cryptoMode, AddMode addMode)
+        public byte[] Encrypt(byte[] openText, string key, CryptoMode cryptoMode, AddMode addMode = AddMode.ANSI)
         {
             if (!IsValidKey(key))
                 throw new ArgumentException("Invalid key!");
@@ -358,7 +358,7 @@ namespace DES
             return cryptedBytes;
         }
 
-        private BitArray[] GetBlocks(BitArray text, AddMode addMode)
+        private BitArray[] GetBlocks(BitArray text, AddMode addMode = AddMode.ANSI)
         {
             int blocksNumber = text.Count / BlockSizeBits;
             int left_numbers = text.Count % BlockSizeBits;
@@ -400,23 +400,74 @@ namespace DES
                     }
 
                 case AddMode.ISO:
-                    break;
+                    {
+                        Random r = new Random();
+
+                        byte emptyBytes = Convert.ToByte((BlockSizeBits - left_numbers) / 8);
+                        byte fullBytes = (byte)(left_numbers / 8);
+
+                        byte[] textInBytes = new byte[BlockSizeBytes];
+
+                        blocks[blocksNumber - 1].CopyTo(textInBytes, 0);
+
+                        for (int i = fullBytes; i < BlockSizeBytes; i++)
+                        {
+                            if (i == BlockSizeBytes - 1)
+                                textInBytes[i] = emptyBytes;
+                            else
+                                textInBytes[i] = (byte)r.Next(0, 255);
+                        }
+
+                        blocks[blocksNumber - 1] = new BitArray(textInBytes);
+
+                        break;
+                    }
                 case AddMode.PKC:
-                    break;
+                    {
+                        byte emptyBytes = Convert.ToByte((BlockSizeBits - left_numbers) / 8);
+                        byte fullBytes = (byte)(left_numbers / 8);
+
+                        byte[] textInBytes = new byte[BlockSizeBytes];
+
+                        blocks[blocksNumber - 1].CopyTo(textInBytes, 0);
+
+                        for (int i = fullBytes; i < BlockSizeBytes; i++)
+                            textInBytes[i] = emptyBytes;
+
+                        blocks[blocksNumber - 1] = new BitArray(textInBytes);
+
+                        break;
+                    }
                 case AddMode.ISO_EIC:
-                    break;
+                    {
+                        byte emptyBytes = Convert.ToByte((BlockSizeBits - left_numbers) / 8);
+                        byte fullBytes = (byte)(left_numbers / 8);
+
+                        byte[] textInBytes = new byte[BlockSizeBytes];
+
+                        blocks[blocksNumber - 1].CopyTo(textInBytes, 0);
+
+                        for (int i = fullBytes; i < BlockSizeBytes; i++)
+                        {
+                            if (i == 0)
+                                textInBytes[i] = 128;
+                            else
+                                textInBytes[i] = 0;
+                        }
+
+                        blocks[blocksNumber - 1] = new BitArray(textInBytes);
+
+                        break;
+                    }
                 case AddMode.None:
                     return blocks;
                 default:
                     break;
             }
-
-
-
             return blocks;
         }
 
-        private byte[] SolvePadding(byte[] withPadding, AddMode addMode)
+        private byte[] SolvePadding(byte[] withPadding, AddMode addMode = AddMode.ANSI)
         {
             List<byte> withoutPadding = new List<byte>();
             
@@ -442,11 +493,61 @@ namespace DES
                     }
 
                 case AddMode.ISO:
-                    break;
+                    {
+                        byte lastByte = withPadding[withPadding.Length - 1];
+
+                        //no padding
+                        if (lastByte > BlockSizeBytes || lastByte > withPadding.Length || lastByte == 0)
+                            return withPadding;
+
+                        for (int i = 0; i < withPadding.Length - lastByte; i++)
+                            withoutPadding.Add(withPadding[i]);
+
+                        return withoutPadding.ToArray();
+                    }
                 case AddMode.PKC:
-                    break;
+                    {
+                        byte lastByte = withPadding[withPadding.Length - 1];
+
+                        //no padding
+                        if (lastByte > BlockSizeBytes || lastByte > withPadding.Length || lastByte == 0)
+                            return withPadding;
+
+                        for (int i = withPadding.Length - lastByte + 1; i < withPadding.Length - 1; i++)
+                            if (withPadding[i] != lastByte)
+                                return withPadding;
+
+                        for (int i = 0; i < withPadding.Length - lastByte; i++)
+                            withoutPadding.Add(withPadding[i]);
+
+                        return withoutPadding.ToArray();
+                    }
                 case AddMode.ISO_EIC:
-                    break;
+                    {
+                        byte lastByte = withPadding[withPadding.Length - 1];
+
+                        //no padding
+                        if (lastByte != 0)
+                            return withPadding;
+
+                        int indexOf128 = 0;
+
+                        for (int i = withPadding.Length - 1; i >= 0; i--)
+                        {
+                            if (withPadding[i] == 128)
+                            {
+                                indexOf128 = i;
+                                break;
+                            }
+                            else if (withPadding[i] != 0)
+                                return withPadding;
+                        }
+
+                        for (int i = 0; i < indexOf128; i++)
+                            withoutPadding.Add(withPadding[i]);
+
+                        return withoutPadding.ToArray();
+                    }          
                 case AddMode.None:
                     break;
                 default:
@@ -456,7 +557,7 @@ namespace DES
             return withPadding;
         }
 
-        public byte[] Decrypt(byte[] cryptedText, string key, CryptoMode cryptoMode, AddMode addMode)
+        public byte[] Decrypt(byte[] cryptedText, string key, CryptoMode cryptoMode, AddMode addMode = AddMode.ANSI)
         {
             if (!IsValidKey(key))
                 throw new ArgumentException("Invalid key!");
