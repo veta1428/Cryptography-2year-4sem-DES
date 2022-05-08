@@ -8,32 +8,12 @@ namespace DES
     {
         static void Main(string[] args)
         {
-            string openText = @"123456782wudhwud uw uyduw duwoi2;u2   2y ydw dywd";
-            byte[] data = Encoding.UTF8.GetBytes(openText);
-
+            string openText = @"12345edejdhejde eyfe fye fry rf urОЛЦЫВЦЛЦЛОЫВЦ6789";
 
             DES dES = new DES();
-            //byte[] array = Encoding.UTF8.GetBytes("18191161");
-            //BitArray[] keys = dES.KeySchedule(Encoding.UTF8.GetBytes("18191161"));
-            //BitArray[] keys2 = dES.KeySchedule(Encoding.UTF8.GetBytes("18191161"));
-
-            byte[] cr = dES.Encrypt(openText, "8191161", CryptoMode.ECB, AddMode.ISO_EIC);
-            byte[] dr = dES.Decrypt(cr, "8191161", CryptoMode.ECB, AddMode.ISO_EIC);
+            byte[] cr = dES.Encrypt(openText, "8191161", CryptoMode.OFB, AddMode.ISO_EIC, Encoding.ASCII.GetBytes("12345678"));
+            byte[] dr = dES.Decrypt(cr, "8191161", CryptoMode.OFB, AddMode.ISO_EIC, Encoding.ASCII.GetBytes("12345678"));
             Console.WriteLine(Encoding.UTF8.GetString(dr));
-
-            //BitArray openTextBits = new BitArray(Encoding.UTF8.GetBytes(openText));
-
-            //BitArray crypted = dES.EncryptSingleBlock(keys, openTextBits);
-            //BitArray decrypted = dES.DecryptSingleBlock(keys2, crypted);
-
-
-            //for (int i = 0; i < crypted.Length; i++)
-            //{
-            //    if (openTextBits[i] != decrypted[i])
-            //    {
-            //        Console.WriteLine(i);
-            //    }
-            //}
         }
     }
 }

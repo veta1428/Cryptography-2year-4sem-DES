@@ -306,11 +306,102 @@ namespace DES
             return crypted;
         }
 
+        private BitArray EncryptCBC(BitArray[] blocks, BitArray[] roundKeys, BitArray C0)
+        {
+            BitArray crypted = new BitArray(0);
 
-        public byte[] Encrypt(string openText, string key, CryptoMode cryptoMode, AddMode addMode = AddMode.ANSI)
-            => Encrypt(Encoding.UTF8.GetBytes(openText), key, cryptoMode, addMode);
+            for (int i = 0; i < blocks.Length; i++)
+            {
+                BitArray xored = blocks[i].Xor(C0);
+                BitArray C1 = EncryptSingleBlock(roundKeys, xored);
+                C0 = C1;
+                crypted = ConcatBitArrays(crypted, C1);
+            }
 
-        public byte[] Encrypt(byte[] openText, string key, CryptoMode cryptoMode, AddMode addMode = AddMode.ANSI)
+            return crypted;
+        }
+
+        private BitArray DecryptCBC(BitArray[] blocks, BitArray[] roundKeys, BitArray C0)
+        {
+            BitArray crypted = new BitArray(0);
+
+            for (int i = 0; i < blocks.Length; i++)
+            {
+                BitArray C1 = DecryptSingleBlock(roundKeys, blocks[i]);
+                BitArray xored = C0.Xor(C1);
+                C0 = blocks[i];
+                crypted = ConcatBitArrays(crypted, xored);
+            }
+
+            return crypted;
+        }
+
+        private BitArray EncryptCFB(BitArray[] blocks, BitArray[] roundKeys, BitArray C0)
+        {
+            BitArray crypted = new BitArray(0);
+
+            for (int i = 0; i < blocks.Length; i++)
+            {
+                BitArray toXorWith = EncryptSingleBlock(roundKeys, C0);
+                BitArray xored = toXorWith.Xor(blocks[i]);
+                crypted = ConcatBitArrays(crypted, xored);
+                C0 = xored;
+            }
+
+            return crypted;
+        }
+
+        private BitArray DecryptCFB(BitArray[] blocks, BitArray[] roundKeys, BitArray C0)
+        {
+            BitArray crypted = new BitArray(0);
+
+            for (int i = 0; i < blocks.Length; i++)
+            {
+                BitArray toXorWith = EncryptSingleBlock(roundKeys, C0);
+                BitArray xored = toXorWith.Xor(blocks[i]);
+                crypted = ConcatBitArrays(crypted, xored);
+                C0 = blocks[i];
+            }
+
+            return crypted;
+        }
+
+        private BitArray EncryptOFB(BitArray[] blocks, BitArray[] roundKeys, BitArray C0)
+        {
+            BitArray crypted = new BitArray(0);
+
+            for (int i = 0; i < blocks.Length; i++)
+            {
+                BitArray toXorWith = EncryptSingleBlock(roundKeys, C0);
+                BitArray clone = (BitArray)toXorWith.Clone();
+                BitArray xored = toXorWith.Xor(blocks[i]);
+                crypted = ConcatBitArrays(crypted, xored);
+                C0 = clone;
+            }
+
+            return crypted;
+        }
+
+        private BitArray DecryptOFB(BitArray[] blocks, BitArray[] roundKeys, BitArray C0)
+        {
+            BitArray crypted = new BitArray(0);
+
+            for (int i = 0; i < blocks.Length; i++)
+            {
+                BitArray toXorWith = EncryptSingleBlock(roundKeys, C0);
+                BitArray clone = (BitArray)toXorWith.Clone();
+                BitArray xored = toXorWith.Xor(blocks[i]);
+                crypted = ConcatBitArrays(crypted, xored);
+                C0 = clone;
+            }
+
+            return crypted;
+        }
+
+        public byte[] Encrypt(string openText, string key, CryptoMode cryptoMode, AddMode addMode = AddMode.ANSI, byte[]? C0_bytes = null)
+            => Encrypt(Encoding.UTF8.GetBytes(openText), key, cryptoMode, addMode, C0_bytes);
+
+        public byte[] Encrypt(byte[] openText, string key, CryptoMode cryptoMode, AddMode addMode = AddMode.ANSI, byte[]? C0_bytes = null)
         {
             if (!IsValidKey(key))
                 throw new ArgumentException("Invalid key!");
@@ -333,17 +424,31 @@ namespace DES
 
                 case CryptoMode.CBC:
                     {
-                        //TODO
+                        if (C0_bytes is null)
+                            throw new ArgumentException("IV is null");
+                        BitArray C0 = new BitArray(C0_bytes);
+
+                        crypted = EncryptCBC(blocks, roundKeys, C0);
                         break;
                     }
                 case CryptoMode.CFB:
                     {
-                        //TODO
+                        if (C0_bytes is null)
+                            throw new ArgumentException("IV is null");
+
+                        BitArray C0 = new BitArray(C0_bytes);
+
+                        crypted = EncryptCFB(blocks, roundKeys, C0);
                         break;
                     }
                 case CryptoMode.OFB:
                     {
-                        //TODO
+                        if (C0_bytes is null)
+                            throw new ArgumentException("IV is null");
+
+                        BitArray C0 = new BitArray(C0_bytes);
+
+                        crypted = EncryptOFB(blocks, roundKeys, C0);
                         break;
                     }
                 default:
@@ -557,7 +662,7 @@ namespace DES
             return withPadding;
         }
 
-        public byte[] Decrypt(byte[] cryptedText, string key, CryptoMode cryptoMode, AddMode addMode = AddMode.ANSI)
+        public byte[] Decrypt(byte[] cryptedText, string key, CryptoMode cryptoMode, AddMode addMode = AddMode.ANSI, byte[]? C0_bytes = null)
         {
             if (!IsValidKey(key))
                 throw new ArgumentException("Invalid key!");
@@ -575,11 +680,35 @@ namespace DES
                         break;
                     }
                 case CryptoMode.CBC:
-                    break;
+                    {
+                        if (C0_bytes is null)
+                            throw new ArgumentException("IV is null");
+
+                        BitArray C0 = new BitArray(C0_bytes);
+
+                        decrypted = DecryptCBC(blocks, roundKeys, C0);
+                        break;
+                    }
                 case CryptoMode.CFB:
-                    break;
+                    {
+                        if (C0_bytes is null)
+                            throw new ArgumentException("IV is null");
+
+                        BitArray C0 = new BitArray(C0_bytes);
+
+                        decrypted = DecryptCFB(blocks, roundKeys, C0);
+                        break;
+                    }
                 case CryptoMode.OFB:
-                    break;
+                    {
+                        if (C0_bytes is null)
+                            throw new ArgumentException("IV is null");
+
+                        BitArray C0 = new BitArray(C0_bytes);
+
+                        decrypted = DecryptOFB(blocks, roundKeys, C0);
+                        break;
+                    }
                 default:
                     break;
             }
