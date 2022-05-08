@@ -70,8 +70,6 @@ namespace DES
             return concated;
         }
 
-
-
         public byte[] GetKeyFromString(string key)
         {
             //TODO get 8 bytes from 7 bytes
@@ -161,7 +159,6 @@ namespace DES
 
             return cryptedBits;
         }
-
 
         public BitArray DecryptSingleBlock(BitArray[] keys, BitArray cryptedText)
         {
@@ -383,85 +380,7 @@ namespace DES
         }
 
         private BitArray DecryptOFB(BitArray[] blocks, BitArray[] roundKeys, BitArray C0)
-        {
-            BitArray crypted = new BitArray(0);
-
-            for (int i = 0; i < blocks.Length; i++)
-            {
-                BitArray toXorWith = EncryptSingleBlock(roundKeys, C0);
-                BitArray clone = (BitArray)toXorWith.Clone();
-                BitArray xored = toXorWith.Xor(blocks[i]);
-                crypted = ConcatBitArrays(crypted, xored);
-                C0 = clone;
-            }
-
-            return crypted;
-        }
-
-        public byte[] Encrypt(string openText, string key, CryptoMode cryptoMode, AddMode addMode = AddMode.ANSI, byte[]? C0_bytes = null)
-            => Encrypt(Encoding.UTF8.GetBytes(openText), key, cryptoMode, addMode, C0_bytes);
-
-        public byte[] Encrypt(byte[] openText, string key, CryptoMode cryptoMode, AddMode addMode = AddMode.ANSI, byte[]? C0_bytes = null)
-        {
-            if (!IsValidKey(key))
-                throw new ArgumentException("Invalid key!");
-
-            BitArray extendedKey = ExtendKeyWithParityCheckBits(key);
-
-            BitArray[] roundKeys = KeySchedule(extendedKey);
-
-            BitArray openTextBits = new BitArray(openText);
-            BitArray[] blocks = GetBlocks(openTextBits, addMode);
-            BitArray crypted = new BitArray(0);
-
-            switch (cryptoMode)
-            {
-                case CryptoMode.ECB:
-                    {
-                        crypted = EncryptECB(blocks, roundKeys);
-                        break;
-                    }
-
-                case CryptoMode.CBC:
-                    {
-                        if (C0_bytes is null)
-                            throw new ArgumentException("IV is null");
-                        BitArray C0 = new BitArray(C0_bytes);
-
-                        crypted = EncryptCBC(blocks, roundKeys, C0);
-                        break;
-                    }
-                case CryptoMode.CFB:
-                    {
-                        if (C0_bytes is null)
-                            throw new ArgumentException("IV is null");
-
-                        BitArray C0 = new BitArray(C0_bytes);
-
-                        crypted = EncryptCFB(blocks, roundKeys, C0);
-                        break;
-                    }
-                case CryptoMode.OFB:
-                    {
-                        if (C0_bytes is null)
-                            throw new ArgumentException("IV is null");
-
-                        BitArray C0 = new BitArray(C0_bytes);
-
-                        crypted = EncryptOFB(blocks, roundKeys, C0);
-                        break;
-                    }
-                default:
-                    break;
-            }
-
-            int bitsCount = crypted.Count;
-
-            byte[] cryptedBytes = new byte[bitsCount / 8];
-            crypted.CopyTo(cryptedBytes, 0);
-
-            return cryptedBytes;
-        }
+            => EncryptOFB(blocks, roundKeys, C0);
 
         private BitArray[] GetBlocks(BitArray text, AddMode addMode = AddMode.ANSI)
         {
@@ -474,7 +393,7 @@ namespace DES
 
             BitArray[] blocks = new BitArray[blocksNumber];
 
-            for (int i = 0; i < blocksNumber; i ++)
+            for (int i = 0; i < blocksNumber; i++)
                 blocks[i] = GetRange(text, i * BlockSizeBits, (i + 1) * BlockSizeBits);
 
             if (left_numbers == 0)
@@ -484,7 +403,7 @@ namespace DES
             {
                 case AddMode.ANSI:
                     {
-                        byte emptyBytes = Convert.ToByte((BlockSizeBits - left_numbers) / 8); 
+                        byte emptyBytes = Convert.ToByte((BlockSizeBits - left_numbers) / 8);
                         byte fullBytes = (byte)(left_numbers / 8);
 
                         byte[] textInBytes = new byte[BlockSizeBytes];
@@ -493,7 +412,7 @@ namespace DES
 
                         for (int i = fullBytes; i < BlockSizeBytes; i++)
                         {
-                            if ( i == BlockSizeBytes - 1)
+                            if (i == BlockSizeBytes - 1)
                                 textInBytes[i] = emptyBytes;
                             else
                                 textInBytes[i] = 0;
@@ -575,7 +494,7 @@ namespace DES
         private byte[] SolvePadding(byte[] withPadding, AddMode addMode = AddMode.ANSI)
         {
             List<byte> withoutPadding = new List<byte>();
-            
+
             switch (addMode)
             {
                 case AddMode.ANSI:
@@ -652,7 +571,7 @@ namespace DES
                             withoutPadding.Add(withPadding[i]);
 
                         return withoutPadding.ToArray();
-                    }          
+                    }
                 case AddMode.None:
                     break;
                 default:
@@ -660,6 +579,71 @@ namespace DES
             }
 
             return withPadding;
+        }
+
+        public byte[] Encrypt(string openText, string key, CryptoMode cryptoMode, AddMode addMode = AddMode.ANSI, byte[]? C0_bytes = null)
+            => Encrypt(Encoding.UTF8.GetBytes(openText), key, cryptoMode, addMode, C0_bytes);
+
+        public byte[] Encrypt(byte[] openText, string key, CryptoMode cryptoMode, AddMode addMode = AddMode.ANSI, byte[]? C0_bytes = null)
+        {
+            if (!IsValidKey(key))
+                throw new ArgumentException("Invalid key!");
+
+            BitArray extendedKey = ExtendKeyWithParityCheckBits(key);
+
+            BitArray[] roundKeys = KeySchedule(extendedKey);
+
+            BitArray openTextBits = new BitArray(openText);
+            BitArray[] blocks = GetBlocks(openTextBits, addMode);
+            BitArray crypted = new BitArray(0);
+
+            switch (cryptoMode)
+            {
+                case CryptoMode.ECB:
+                    {
+                        crypted = EncryptECB(blocks, roundKeys);
+                        break;
+                    }
+
+                case CryptoMode.CBC:
+                    {
+                        if (C0_bytes is null)
+                            throw new ArgumentException("IV is null");
+                        BitArray C0 = new BitArray(C0_bytes);
+
+                        crypted = EncryptCBC(blocks, roundKeys, C0);
+                        break;
+                    }
+                case CryptoMode.CFB:
+                    {
+                        if (C0_bytes is null)
+                            throw new ArgumentException("IV is null");
+
+                        BitArray C0 = new BitArray(C0_bytes);
+
+                        crypted = EncryptCFB(blocks, roundKeys, C0);
+                        break;
+                    }
+                case CryptoMode.OFB:
+                    {
+                        if (C0_bytes is null)
+                            throw new ArgumentException("IV is null");
+
+                        BitArray C0 = new BitArray(C0_bytes);
+
+                        crypted = EncryptOFB(blocks, roundKeys, C0);
+                        break;
+                    }
+                default:
+                    break;
+            }
+
+            int bitsCount = crypted.Count;
+
+            byte[] cryptedBytes = new byte[bitsCount / 8];
+            crypted.CopyTo(cryptedBytes, 0);
+
+            return cryptedBytes;
         }
 
         public byte[] Decrypt(byte[] cryptedText, string key, CryptoMode cryptoMode, AddMode addMode = AddMode.ANSI, byte[]? C0_bytes = null)

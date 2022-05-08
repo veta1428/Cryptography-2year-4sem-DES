@@ -1,19 +1,27 @@
-﻿using System;
-using System.Collections;
-using System.Text;
+﻿using System.Text;
 
 namespace DES
 {
-    internal class Program
+    public class Program
     {
         static void Main(string[] args)
         {
-            string openText = @"12345edejdhejde eyfe fye fry rf urОЛЦЫВЦЛЦЛОЫВЦ6789";
+            string openText = @"12345678Hi!";
+            string key = "8191Kl1";
+            string iv = "12345678";
+            AddMode addMode = AddMode.PKC;
+            CryptoMode cryptoMode = CryptoMode.OFB;
 
-            DES dES = new DES();
-            byte[] cr = dES.Encrypt(openText, "8191161", CryptoMode.OFB, AddMode.ISO_EIC, Encoding.ASCII.GetBytes("12345678"));
-            byte[] dr = dES.Decrypt(cr, "8191161", CryptoMode.OFB, AddMode.ISO_EIC, Encoding.ASCII.GetBytes("12345678"));
-            Console.WriteLine(Encoding.UTF8.GetString(dr));
+            DES des = new DES();
+            byte[] iv_bytes = Encoding.ASCII.GetBytes(iv);
+            byte[] crypted = des.Encrypt(openText, key, cryptoMode, addMode, iv_bytes);
+            byte[] decrypted = des.Decrypt(crypted, key, cryptoMode, addMode, iv_bytes);
+
+            Console.WriteLine("Padding mode: " + addMode);
+            Console.WriteLine("Crypting mode: " + cryptoMode);
+            Console.WriteLine("Open text: " + openText);
+            Console.WriteLine("Encrypted: " + Encoding.UTF8.GetString(crypted));
+            Console.WriteLine("Decrypted: " + Encoding.UTF8.GetString(decrypted));
         }
     }
 }
