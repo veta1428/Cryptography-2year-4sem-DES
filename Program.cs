@@ -30,25 +30,6 @@ namespace DES
                     Console.WriteLine(i);
                 }
             }
-
-            //dES.EncryptSingleBlock(data, );
-
-            //BitArray bits4 = new BitArray(4);
-
-            //int number = 10;
-            //bits4[3] = Convert.ToBoolean(number % 2);
-            //number /= 2;
-            //bits4[2] = Convert.ToBoolean(number % 2);
-            //number /= 2;
-            //bits4[1] = Convert.ToBoolean(number % 2);
-            //number /= 2;
-            //bits4[0] = Convert.ToBoolean(number % 2);
-
-            //for (int i = 0; i < bits4.Count; i++)
-            //{
-            //    Console.WriteLine(bits4[i]);
-            //}
-
         }
     }
 }

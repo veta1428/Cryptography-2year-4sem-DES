@@ -5,43 +5,28 @@ namespace DES
 {
     public class DES
     {
-        public void CycleShift(BitArray bits, int shift, Shift typeOfShift)
+        public void CycleLeftShift(BitArray bits, int shift)
         {
             int facticalShift = shift % bits.Length;
 
             if (facticalShift != shift)
-            {
                 Console.WriteLine("Warning! too big shift");
-            }
 
             BitArray toShift = new BitArray(facticalShift);
 
-            switch (typeOfShift)
+            //extract part to be shifted
+            for (int i = 0; i < facticalShift; i++)
+                toShift[i] = bits[i];
+
+            //shift
+            bits.LeftShift(facticalShift);
+
+            //fill extracted part
+            int index = 0;
+            for (int i = bits.Length - facticalShift; i < bits.Length; i++)
             {
-                case Shift.Left:
-                    {
-                        //extract part to be shifted
-                        for (int i = 0; i < facticalShift; i++)
-                        {
-                            toShift[i] = bits[i];
-                        }
-
-                        //shift
-                        bits.LeftShift(facticalShift);
-
-                        //fill extracted part
-                        int index = 0;
-                        for (int i = bits.Length - facticalShift; i < bits.Length; i++)
-                        {
-                            bits[i] = toShift[index];
-                            index++;
-                        }
-                    }
-                    break;
-                case Shift.Right:
-                    throw new NotImplementedException("Right shift is not implemented yet");
-                default:
-                    break;
+                bits[i] = toShift[index];
+                index++;
             }
         }
 
@@ -56,10 +41,10 @@ namespace DES
         {
             BitArray range = new BitArray(endIndex - startIndex);
 
-            if (startIndex < 0 || 
-                startIndex >= bits.Length || 
-                endIndex < 0 || 
-                endIndex >= bits.Length || 
+            if (startIndex < 0 ||
+                startIndex >= bits.Length ||
+                endIndex < 0 ||
+                endIndex >= bits.Length ||
                 startIndex >= endIndex)
                 throw new ArgumentOutOfRangeException("Index of range was out of range");
 
@@ -93,7 +78,7 @@ namespace DES
                                 21, 13, 5, 28, 20, 12, 4 };
 
         //shift count for each round
-        int[] shift = new int[]{ 1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1 };
+        int[] shift = new int[] { 1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1 };
 
         //reduce round key
         int[] CP = new int[]{  14, 17, 11, 24, 1, 5,
@@ -106,7 +91,7 @@ namespace DES
                                 46, 42, 50, 36, 29, 32 };
 
         // intital permutation table
-        int[] IP = {   58 ,50 ,42 ,34 ,26 ,18 ,10 ,2 ,  
+        int[] IP = {   58 ,50 ,42 ,34 ,26 ,18 ,10 ,2 ,
         60 ,52 ,44 ,36 ,28 ,20 ,12 ,4 ,
         62 ,54 ,46 ,38 ,30 ,22 ,14 ,6 ,
         64 ,56 ,48 ,40 ,32 ,24 ,16 ,8 ,
@@ -236,8 +221,8 @@ namespace DES
             //generate key for each round
             for (int i = 0; i < Constants.Rounds; i++)
             {
-                CycleShift(cPartOfKey, shift[i], Shift.Left);
-                CycleShift(dPartOfKey, shift[i], Shift.Left);
+                CycleLeftShift(cPartOfKey, shift[i]);
+                CycleLeftShift(dPartOfKey, shift[i]);
 
                 BitArray roundSourceKey = ConcatBitArrays(cPartOfKey, dPartOfKey);
                 BitArray roundKey = new BitArray(Constants.RoundKeySize);
@@ -253,6 +238,8 @@ namespace DES
 
         public BitArray EncryptSingleBlock(BitArray[] keys, BitArray openText)
         {
+            ApplyPermutation(openText, IP);
+
             //separate on 2 parts L R
             BitArray L = new BitArray(Constants.HalfBlockSizeBits);
             BitArray R = new BitArray(Constants.HalfBlockSizeBits);
@@ -267,12 +254,11 @@ namespace DES
 
             //rounds
             for (int i = 0; i < Constants.Rounds; i++)
-            {
                 RoundEncrypt(ref L, ref R, keys[i]);
-            }
 
-            byte[] cryptedText = new byte[Constants.BlockSizeBytes];
             BitArray cryptedBits = ConcatBitArrays(L, R);
+
+            ApplyPermutation(cryptedBits, IP);
 
             return cryptedBits;
         }
@@ -280,6 +266,8 @@ namespace DES
 
         public BitArray DecryptSingleBlock(BitArray[] keys, BitArray cryptedText)
         {
+            ApplyPermutation(cryptedText, IP);
+
             //separate on 2 parts L R
             BitArray L = new BitArray(Constants.HalfBlockSizeBits);
             BitArray R = new BitArray(Constants.HalfBlockSizeBits);
@@ -294,12 +282,11 @@ namespace DES
 
             //rounds
             for (int i = Constants.Rounds - 1; i >= 0; i--)
-            {
                 RoundDecrypt(ref L, ref R, keys[i]);
-            }
 
-            byte[] decryptedText = new byte[Constants.BlockSizeBytes];
             BitArray decryptedBits = ConcatBitArrays(L, R);
+
+            ApplyPermutation(decryptedBits, IP_R);
 
             return decryptedBits;
         }
@@ -341,14 +328,10 @@ namespace DES
 
             BitArray xored = expandedR.Xor(roundKey);
 
-            byte[] resultBytes = new byte[8];
-
             BitArray result = new BitArray(0);
 
             for (int i = 0; i < 8; i++)
-            {
                 result = ConcatBitArrays(result, UseSBox(GetRange(xored, i, i + 6), S_boxes[i]));
-            }
 
             return result;
         }
@@ -360,7 +343,7 @@ namespace DES
             byte row = Convert.ToByte(Convert.ToByte(sixBits[5]) + Convert.ToByte(sixBits[0]) * (byte)2);
             byte column = Convert.ToByte(
                 Convert.ToByte(sixBits[4]) +
-                Convert.ToByte(sixBits[3]) * 2 + 
+                Convert.ToByte(sixBits[3]) * 2 +
                 Convert.ToByte(sixBits[2]) * 4 +
                 Convert.ToByte(sixBits[2]) * 8);
 
