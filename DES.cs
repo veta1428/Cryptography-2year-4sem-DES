@@ -1,11 +1,12 @@
 ﻿using System.Collections;
 using System.Text;
+using static DES.Constants;
 
 namespace DES
 {
     public class DES
     {
-        public void CycleLeftShift(BitArray bits, int shift)
+        private void CycleLeftShift(BitArray bits, int shift)
         {
             int facticalShift = shift % bits.Length;
 
@@ -37,16 +38,18 @@ namespace DES
         /// <param name="startIndex"></param>
         /// <param name="endIndex"></param>
         /// <returns></returns>
-        public BitArray GetRange(BitArray bits, int startIndex, int endIndex)
+        private BitArray GetRange(BitArray bits, int startIndex, int endIndex)
         {
             BitArray range = new BitArray(endIndex - startIndex);
 
             if (startIndex < 0 ||
                 startIndex >= bits.Length ||
                 endIndex < 0 ||
-                endIndex >= bits.Length ||
                 startIndex >= endIndex)
                 throw new ArgumentOutOfRangeException("Index of range was out of range");
+
+            if (endIndex >= bits.Length)
+                endIndex = bits.Length;
 
             for (int i = startIndex; i < endIndex; i++)
                 range[i - startIndex] = bits[i];
@@ -54,7 +57,7 @@ namespace DES
             return range;
         }
 
-        public BitArray ConcatBitArrays(BitArray first, BitArray second)
+        private BitArray ConcatBitArrays(BitArray first, BitArray second)
         {
             BitArray concated = new BitArray(first.Length + second.Length);
 
@@ -67,109 +70,7 @@ namespace DES
             return concated;
         }
 
-        //initial key part separation
-        int[] CD = new int[] {  57, 49, 41, 33, 25, 17, 9,
-                                1, 58, 50, 42, 34, 26, 18,
-                                10, 2, 59, 51, 43, 35, 27,
-                                19, 11, 3, 60, 52, 44, 36,
-                                63, 55, 47, 39, 31, 23, 15,
-                                7, 62, 54, 46, 38, 30, 22,
-                                14, 6, 61, 53, 45, 37, 29,
-                                21, 13, 5, 28, 20, 12, 4 };
 
-        //shift count for each round
-        int[] shift = new int[] { 1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1 };
-
-        //reduce round key
-        int[] CP = new int[]{  14, 17, 11, 24, 1, 5,
-                                3, 28, 15, 6, 21, 10,
-                                23, 19, 12, 4, 26, 8,
-                                16, 7, 27, 20, 13, 2,
-                                41, 52, 31, 37, 47, 55,
-                                30, 40, 51, 45, 33, 48,
-                                44, 49, 39, 56, 34, 53,
-                                46, 42, 50, 36, 29, 32 };
-
-        // intital permutation table
-        int[] IP = {   58 ,50 ,42 ,34 ,26 ,18 ,10 ,2 ,
-        60 ,52 ,44 ,36 ,28 ,20 ,12 ,4 ,
-        62 ,54 ,46 ,38 ,30 ,22 ,14 ,6 ,
-        64 ,56 ,48 ,40 ,32 ,24 ,16 ,8 ,
-        57 ,49 ,41 ,33 ,25 ,17 ,9  ,1 ,
-        59 ,51 ,43 ,35 ,27 ,19 ,11 ,3 ,
-        61 ,53 ,45 ,37 ,29 ,21 ,13 ,5 ,
-        63 ,55 ,47 ,39 ,31 ,23 ,15 ,7 };
-
-        //reversed to initial permutation
-        int[] IP_R = {   40 ,8  ,48 ,16 ,56 ,24 ,64 ,32 ,
-        39 ,7  ,47 ,15 ,55 ,23 ,63 ,31 ,
-        38 ,6  ,46 ,14 ,54 ,22 ,62 ,30 ,
-        37 ,5  ,45 ,13 ,53 ,21 ,61 ,29 ,
-        36 ,4  ,44 ,12 ,52 ,20 ,60 ,28 ,
-        35 ,3  ,43 ,11 ,51 ,19 ,59 ,27 ,
-        34 ,2  ,42 ,10 ,50 ,18 ,58 ,26 ,
-        33 ,1  ,41 ,9  ,49 ,17 ,57 ,25 };
-
-        byte[][][] S_boxes = new byte[][][]{
-                                new byte[][]{
-                                    new byte[]{ 14,4,13,1,2,15,11,8,3,10,6,12,5,9,0,7 },
-                                    new byte[]{ 0,15,7,4,14,2,13,1,10,6,12,11,9,5,3,8 },
-                                    new byte[]{ 4,1,14,8,13,6,2,11,15,12,9,7,3,10,5,0 },
-                                    new byte[]{ 15,12,8,2,4,9,1,7,5,11,3,14,10,0,6,13 }
-                                },
-                                new byte[][]{
-                                    new byte[]{ 15,1,8,14,6,11,3,4,9,7,2,13,12,0,5,10 },
-                                    new byte[]{ 3,13,4,7,15,2,8,14,12,0,1,10,6,9,11,5 },
-                                    new byte[]{ 0,14,7,11,10,4,13,1,5,8,12,6,9,3,2,15 },
-                                    new byte[]{ 13,8,10,1,3,15,4,2,11,6,7,12,0,5,14,9 }
-                                },
-                                new byte[][]{
-                                    new byte[]{ 10,0,9,14,6,3,15,5,1,13,12,7,11,4,2,8 },
-                                    new byte[]{ 13,7,0,9,3,4,6,10,2,8,5,14,12,11,15,1 },
-                                    new byte[]{ 13,6,4,9,8,15,3,0,11,1,2,12,5,10,14,7 },
-                                    new byte[]{ 1,10,13,0,6,9,8,7,4,15,14,3,11,5,2,12 }
-                                },
-                                new byte[][]{
-                                    new byte[]{ 7,13,14,3,0,6,9,10,1,2,8,5,11,12,4,15 },
-                                    new byte[]{ 13,8,11,5,6,15,0,3,4,7,2,12,1,10,14,9 },
-                                    new byte[]{ 10,6,9,0,12,11,7,13,15,1,3,14,5,2,8,4 },
-                                    new byte[]{ 3,15,0,6,10,1,13,8,9,4,5,11,12,7,2,14 }
-                                },
-                                new byte[][]{
-                                    new byte[]{ 2,12,4,1,7,10,11,6,8,5,3,15,13,0,14,9 },
-                                    new byte[]{ 14,11,2,12,4,7,13,1,5,0,15,10,3,9,8,6 },
-                                    new byte[]{ 4,2,1,11,10,13,7,8,15,9,12,5,6,3,0,14 },
-                                    new byte[]{ 11,8,12,7,1,14,2,13,6,15,0,9,10,4,5,3 }
-                                },
-                                new byte[][]{
-                                    new byte[]{ 12,1,10,15,9,2,6,8,0,13,3,4,14,7,5,11 },
-                                    new byte[]{ 10,15,4,2,7,12,9,5,6,1,13,14,0,11,3,8 },
-                                    new byte[]{ 9,14,15,5,2,8,12,3,7,0,4,10,1,13,11,6 },
-                                    new byte[]{ 4,3,2,12,9,5,15,10,11,14,1,7,6,0,8,13 }
-                                },
-                                new byte[][]{
-                                    new byte[]{ 4,11,2,14,15,0,8,13,3,12,9,7,5,10,6,1 },
-                                    new byte[]{ 13,0,11,7,4,9,1,10,14,3,5,12,2,15,8,6 },
-                                    new byte[]{ 1,4,11,13,12,3,7,14,10,15,6,8,0,5,9,2 },
-                                    new byte[]{ 6,11,13,8,1,4,10,7,9,5,0,15,14,2,3,12 }
-                                },
-                                new byte[][]{
-                                    new byte[]{ 13,2,8,4,6,15,11,1,10,9,3,14,5,0,12,7 },
-                                    new byte[]{ 1,15,13,8,10,3,7,4,12,5,6,11,0,14,9,2 },
-                                    new byte[]{ 7,11,4,1,9,12,14,2,0,6,10,13,15,3,5,8 },
-                                    new byte[]{ 2,1,14,7,4,10,8,13,15,12,9,0,3,5,6,11 }
-                                }
-        };
-
-        //expanding
-        int[] E = new int[]{   32 ,1  ,2  ,3  ,4  ,5  ,
-        4  ,5  ,6  ,7  ,8  ,9  ,
-        8  ,9  ,10 ,11 ,12 ,13 ,
-        12 ,13 ,14 ,15 ,16 ,17 ,
-        16 ,17 ,18 ,19 ,20 ,21 ,
-        20 ,21 ,22 ,23 ,24 ,25 ,
-        24 ,25 ,26 ,27 ,28 ,29 ,
-        28 ,29 ,30 ,31 ,32 ,1 };
 
         public byte[] GetKeyFromString(string key)
         {
@@ -183,9 +84,9 @@ namespace DES
         /// </summary>
         /// <param name="key">Byte array key without integrity bits</param>
         /// <returns>If key is valid</returns>
-        public bool IsValidKey(byte[] key)
+        private bool IsValidKey(string key)
         {
-            if (key.Length != Constants.ExtendedKeySizeBytes)
+            if (key.Length != KeyLengthString)
                 return false;
 
             return true;
@@ -198,19 +99,17 @@ namespace DES
         /// </summary>
         /// <param name="key"> With additional bits</param>
         /// <returns></returns>
-        public BitArray[] KeySchedule(byte[] key)
+        public BitArray[] KeySchedule(BitArray initialKey)
         {
-            BitArray[] roundKeys = new BitArray[Constants.Rounds];
+            BitArray[] roundKeys = new BitArray[Rounds];
 
-            BitArray initialKey = new BitArray(key);
-
-            int halfOfKey = Constants.KeySizeBits / 2;
+            int halfOfKey = KeySizeBits / 2;
 
 
             BitArray cPartOfKey = new BitArray(halfOfKey);
             BitArray dPartOfKey = new BitArray(halfOfKey);
 
-            for (int i = 0; i < Constants.KeySizeBits; i++)
+            for (int i = 0; i < KeySizeBits; i++)
             {
                 if (i < halfOfKey)
                     cPartOfKey[i] = initialKey[CD[i] - 1];
@@ -219,15 +118,15 @@ namespace DES
             }
 
             //generate key for each round
-            for (int i = 0; i < Constants.Rounds; i++)
+            for (int i = 0; i < Rounds; i++)
             {
                 CycleLeftShift(cPartOfKey, shift[i]);
                 CycleLeftShift(dPartOfKey, shift[i]);
 
                 BitArray roundSourceKey = ConcatBitArrays(cPartOfKey, dPartOfKey);
-                BitArray roundKey = new BitArray(Constants.RoundKeySize);
+                BitArray roundKey = new BitArray(RoundKeySize);
 
-                for (int j = 0; j < Constants.RoundKeySize; j++)
+                for (int j = 0; j < RoundKeySize; j++)
                     roundKey[j] = roundSourceKey[CP[j] - 1];
 
                 roundKeys[i] = roundKey;
@@ -241,19 +140,19 @@ namespace DES
             ApplyPermutation(openText, IP);
 
             //separate on 2 parts L R
-            BitArray L = new BitArray(Constants.HalfBlockSizeBits);
-            BitArray R = new BitArray(Constants.HalfBlockSizeBits);
+            BitArray L = new BitArray(HalfBlockSizeBits);
+            BitArray R = new BitArray(HalfBlockSizeBits);
 
-            for (int i = 0; i < Constants.BlockSizeBits; i++)
+            for (int i = 0; i < BlockSizeBits; i++)
             {
-                if (i < Constants.HalfBlockSizeBits)
+                if (i < HalfBlockSizeBits)
                     L[i] = openText[i];
                 else
-                    R[i - Constants.HalfBlockSizeBits] = openText[i];
+                    R[i - HalfBlockSizeBits] = openText[i];
             }
 
             //rounds
-            for (int i = 0; i < Constants.Rounds; i++)
+            for (int i = 0; i < Rounds; i++)
                 RoundEncrypt(ref L, ref R, keys[i]);
 
             BitArray cryptedBits = ConcatBitArrays(L, R);
@@ -269,19 +168,19 @@ namespace DES
             ApplyPermutation(cryptedText, IP);
 
             //separate on 2 parts L R
-            BitArray L = new BitArray(Constants.HalfBlockSizeBits);
-            BitArray R = new BitArray(Constants.HalfBlockSizeBits);
+            BitArray L = new BitArray(HalfBlockSizeBits);
+            BitArray R = new BitArray(HalfBlockSizeBits);
 
-            for (int i = 0; i < Constants.BlockSizeBits; i++)
+            for (int i = 0; i < BlockSizeBits; i++)
             {
-                if (i < Constants.HalfBlockSizeBits)
+                if (i < HalfBlockSizeBits)
                     L[i] = cryptedText[i];
                 else
-                    R[i - Constants.HalfBlockSizeBits] = cryptedText[i];
+                    R[i - HalfBlockSizeBits] = cryptedText[i];
             }
 
             //rounds
-            for (int i = Constants.Rounds - 1; i >= 0; i--)
+            for (int i = Rounds - 1; i >= 0; i--)
                 RoundDecrypt(ref L, ref R, keys[i]);
 
             BitArray decryptedBits = ConcatBitArrays(L, R);
@@ -291,7 +190,7 @@ namespace DES
             return decryptedBits;
         }
 
-        public BitArray ApplyPermutation(BitArray bits, int[] permutation)
+        private BitArray ApplyPermutation(BitArray bits, int[] permutation)
         {
             BitArray permutatedBits = new BitArray(bits.Length);
 
@@ -302,7 +201,7 @@ namespace DES
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0059:Unnecessary assignment of a value", Justification = "<Pending>")]
-        public void RoundEncrypt(ref BitArray L, ref BitArray R, BitArray roundKey)
+        private void RoundEncrypt(ref BitArray L, ref BitArray R, BitArray roundKey)
         {
             BitArray afterF = F(R, roundKey);
             BitArray newR = afterF.Xor(L);
@@ -311,7 +210,7 @@ namespace DES
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0059:Unnecessary assignment of a value", Justification = "<Pending>")]
-        public void RoundDecrypt(ref BitArray L, ref BitArray R, BitArray roundKey)
+        private void RoundDecrypt(ref BitArray L, ref BitArray R, BitArray roundKey)
         {
             BitArray afterF = F(L, roundKey);
             BitArray newR = afterF.Xor(R);
@@ -319,11 +218,11 @@ namespace DES
             L = newR;
         }
 
-        public BitArray F(BitArray R, BitArray roundKey)
+        private BitArray F(BitArray R, BitArray roundKey)
         {
-            BitArray expandedR = new BitArray(Constants.ExpandeHalfSizeBits);
+            BitArray expandedR = new BitArray(ExpandeHalfSizeBits);
 
-            for (int i = 0; i < Constants.ExpandeHalfSizeBits; i++)
+            for (int i = 0; i < ExpandeHalfSizeBits; i++)
                 expandedR[i] = R[E[i] - 1];
 
             BitArray xored = expandedR.Xor(roundKey);
@@ -336,7 +235,7 @@ namespace DES
             return result;
         }
 
-        public BitArray UseSBox(BitArray sixBits, byte[][] sbox)
+        private BitArray UseSBox(BitArray sixBits, byte[][] sbox)
         {
             if (sixBits.Count != 6)
                 throw new ArgumentException("There is no 6 bits");
@@ -359,6 +258,237 @@ namespace DES
             bits4[0] = Convert.ToBoolean(number % 2);
 
             return bits4;
+        }
+
+        private BitArray ExtendKeyWithParityCheckBits(string key)
+        {
+            BitArray shortKeyBits = new BitArray(Encoding.ASCII.GetBytes(key));
+            BitArray extendedKeyBits = new BitArray(ExtendedKeySizeBits);
+            bool parityBit = false;
+            int injCount = 0;
+
+            for (int i = 0; i < ExtendedKeySizeBits; i++)
+            {
+                if ((i + 1) % 8 == 0)
+                {
+                    extendedKeyBits[i] = parityBit;
+                    parityBit = false;
+                    injCount++;
+                }
+                else
+                {
+                    parityBit ^= shortKeyBits[i - injCount];
+                    extendedKeyBits[i] = shortKeyBits[i - injCount];
+                }
+            }
+
+            return extendedKeyBits;
+        }
+
+
+        private BitArray EncryptECB(BitArray[] blocks, BitArray[] roundKeys) 
+        {
+            BitArray crypted = new BitArray(0);
+
+            for (int i = 0; i < blocks.Length; i++)
+                crypted = ConcatBitArrays(crypted, EncryptSingleBlock(roundKeys, blocks[i]));
+
+            return crypted;
+        }
+
+        private BitArray DecryptECB(BitArray[] blocks, BitArray[] roundKeys)
+        {
+            BitArray crypted = new BitArray(0);
+
+            for (int i = 0; i < blocks.Length; i++)
+                crypted = ConcatBitArrays(crypted, DecryptSingleBlock(roundKeys, blocks[i]));
+
+            return crypted;
+        }
+
+
+        public byte[] Encrypt(string openText, string key, CryptoMode cryptoMode, AddMode addMode)
+            => Encrypt(Encoding.UTF8.GetBytes(openText), key, cryptoMode, addMode);
+
+        public byte[] Encrypt(byte[] openText, string key, CryptoMode cryptoMode, AddMode addMode)
+        {
+            if (!IsValidKey(key))
+                throw new ArgumentException("Invalid key!");
+
+            BitArray extendedKey = ExtendKeyWithParityCheckBits(key);
+
+            BitArray[] roundKeys = KeySchedule(extendedKey);
+
+            BitArray openTextBits = new BitArray(openText);
+            BitArray[] blocks = GetBlocks(openTextBits, addMode);
+            BitArray crypted = new BitArray(0);
+
+            switch (cryptoMode)
+            {
+                case CryptoMode.ECB:
+                    {
+                        crypted = EncryptECB(blocks, roundKeys);
+                        break;
+                    }
+
+                case CryptoMode.CBC:
+                    {
+                        //TODO
+                        break;
+                    }
+                case CryptoMode.CFB:
+                    {
+                        //TODO
+                        break;
+                    }
+                case CryptoMode.OFB:
+                    {
+                        //TODO
+                        break;
+                    }
+                default:
+                    break;
+            }
+
+            int bitsCount = crypted.Count;
+
+            byte[] cryptedBytes = new byte[bitsCount / 8];
+            crypted.CopyTo(cryptedBytes, 0);
+
+            return cryptedBytes;
+        }
+
+        private BitArray[] GetBlocks(BitArray text, AddMode addMode)
+        {
+            int blocksNumber = text.Count / BlockSizeBits;
+            int left_numbers = text.Count % BlockSizeBits;
+
+
+            if (left_numbers != 0)
+                blocksNumber++;
+
+            BitArray[] blocks = new BitArray[blocksNumber];
+
+            for (int i = 0; i < blocksNumber; i ++)
+                blocks[i] = GetRange(text, i * BlockSizeBits, (i + 1) * BlockSizeBits);
+
+            if (left_numbers == 0)
+                return blocks;
+
+            switch (addMode)
+            {
+                case AddMode.ANSI:
+                    {
+                        byte emptyBytes = Convert.ToByte((BlockSizeBits - left_numbers) / 8); 
+                        byte fullBytes = (byte)(left_numbers / 8);
+
+                        byte[] textInBytes = new byte[BlockSizeBytes];
+
+                        blocks[blocksNumber - 1].CopyTo(textInBytes, 0);
+
+                        for (int i = fullBytes; i < BlockSizeBytes; i++)
+                        {
+                            if ( i == BlockSizeBytes - 1)
+                                textInBytes[i] = emptyBytes;
+                            else
+                                textInBytes[i] = 0;
+                        }
+
+                        blocks[blocksNumber - 1] = new BitArray(textInBytes);
+
+                        break;
+                    }
+
+                case AddMode.ISO:
+                    break;
+                case AddMode.PKC:
+                    break;
+                case AddMode.ISO_EIC:
+                    break;
+                case AddMode.None:
+                    return blocks;
+                default:
+                    break;
+            }
+
+
+
+            return blocks;
+        }
+
+        private byte[] SolvePadding(byte[] withPadding, AddMode addMode)
+        {
+            List<byte> withoutPadding = new List<byte>();
+            
+            switch (addMode)
+            {
+                case AddMode.ANSI:
+                    {
+                        byte lastByte = withPadding[withPadding.Length - 1];
+
+                        //no padding
+                        if (lastByte > BlockSizeBytes || lastByte > withPadding.Length || lastByte == 0)
+                            return withPadding;
+
+
+                        for (int i = withPadding.Length - lastByte + 1; i < withPadding.Length - 1; i++)
+                            if (withPadding[i] != 0)
+                                return withPadding;
+
+                        for (int i = 0; i < withPadding.Length - lastByte; i++)
+                            withoutPadding.Add(withPadding[i]);
+
+                        return withoutPadding.ToArray();
+                    }
+
+                case AddMode.ISO:
+                    break;
+                case AddMode.PKC:
+                    break;
+                case AddMode.ISO_EIC:
+                    break;
+                case AddMode.None:
+                    break;
+                default:
+                    break;
+            }
+
+            return withPadding;
+        }
+
+        public byte[] Decrypt(byte[] cryptedText, string key, CryptoMode cryptoMode, AddMode addMode)
+        {
+            if (!IsValidKey(key))
+                throw new ArgumentException("Invalid key!");
+
+            BitArray extendedKey = ExtendKeyWithParityCheckBits(key);
+            BitArray[] roundKeys = KeySchedule(extendedKey);
+            BitArray cryptedTextBits = new BitArray(cryptedText);
+            BitArray[] blocks = GetBlocks(cryptedTextBits, AddMode.None);
+            BitArray decrypted = new BitArray(0);
+            switch (cryptoMode)
+            {
+                case CryptoMode.ECB:
+                    {
+                        decrypted = DecryptECB(blocks, roundKeys);
+                        break;
+                    }
+                case CryptoMode.CBC:
+                    break;
+                case CryptoMode.CFB:
+                    break;
+                case CryptoMode.OFB:
+                    break;
+                default:
+                    break;
+            }
+
+            int bitsCount = decrypted.Count;
+            byte[] cryptedBytes = new byte[bitsCount / 8];
+
+            decrypted.CopyTo(cryptedBytes, 0);
+
+            return SolvePadding(cryptedBytes, addMode);
         }
     }
 }
